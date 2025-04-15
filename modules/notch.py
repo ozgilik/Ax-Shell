@@ -25,9 +25,14 @@ from utils.icon_resolver import IconResolver
 from fabric.utils.helpers import get_desktop_applications
 from fabric.widgets.image import Image
 from utils.occlusion import check_occlusion
-
+from hyprpy import Hyprland
+from typing import Dict
+import json
+import subprocess
 
 class Notch(Window):
+    _instances = {}
+
     def __init__(self, monitor_id=None, **kwargs):
         super().__init__(
             name=f"notch-{monitor_id}",
@@ -41,7 +46,8 @@ class Notch(Window):
             all_visible=True,
         )
 
-        self.monitor_id = monitor_id
+        self.monitor_id = str(monitor_id)
+        Notch._instances[str(monitor_id)] = self
 
         # Add character buffer for launcher transition
         self._typed_chars_buffer = ""
@@ -336,8 +342,59 @@ class Notch(Window):
         for style in ["launcher", "dashboard", "notification", "overview", "emoji", "power", "tools", "tmux", "cliphist"]:
             self.stack.remove_style_class(style)
         self.stack.set_visible_child(self.compact)
-
+     
     def open_notch(self, widget):
+        try:
+            # 1. Hyprland socket'inden imleç pozisyonunu al
+            cursor_result = subprocess.run(
+                ['hyprctl', 'cursorpos', '-j'], 
+                capture_output=True, 
+                text=True
+            )
+            cursor_data = json.loads(cursor_result.stdout)
+            cursor_x, cursor_y = cursor_data["x"], cursor_data["y"]
+
+            # 2. Tüm monitör bilgilerini al
+            monitors_result = subprocess.run(
+                ['hyprctl', 'monitors', '-j'], 
+                capture_output=True, 
+                text=True
+            )
+            monitors = json.loads(monitors_result.stdout)
+
+            # 3. İmlecin olduğu monitörü bul
+            active_monitor = None
+            for monitor in monitors:
+                m_x = monitor["x"]
+                m_y = monitor["y"]
+                m_width = monitor["width"]
+                m_height = monitor["height"]
+                
+                if (m_x <= cursor_x < m_x + m_width and 
+                    m_y <= cursor_y < m_y + m_height):
+                    active_monitor = monitor
+                    break
+
+            if not active_monitor:  # Fallback
+                active_monitor = monitors[0]
+
+            # 4. İlgili Notch instance'ını çağır
+            active_id = str(active_monitor["id"])
+            if self.monitor_id != active_id:
+                active_notch = Notch._instances.get(active_id)
+                if active_notch:
+                    active_notch._real_open_notch(widget)
+                    return
+                    
+            self._real_open_notch(widget)
+
+        except Exception as e:
+            print(f"Hata: {e}")
+            if Notch._instances:
+                next(iter(Notch._instances.values()))._real_open_notch(widget)
+
+
+    def _real_open_notch(self, widget):
         self.notch_wrap.remove_style_class("occluded")
         
         # Handle tmux manager

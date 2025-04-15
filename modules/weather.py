@@ -37,7 +37,7 @@ class Weather(Button):
 
     def _fetch_weather_thread(self, user_data):
         # Let wttr.in determine location based on IP
-        url = "https://wttr.in/?format=%c+%t" if not data.VERTICAL else "https://wttr.in/?format=%c"
+        url = "https://wttr.in/Konya?format=%c+%t" if not data.VERTICAL else "https://wttr.in/Konya?format=%c"
         # Get detailed info for tooltip
         tooltip_url = "https://wttr.in/?format=%l:+%C,+%t+(%f),+Humidity:+%h,+Wind:+%w"
         

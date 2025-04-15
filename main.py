@@ -36,6 +36,11 @@ if __name__ == "__main__":
     def get_all_monitors():
         hypr = Hyprland()
         return hypr.get_monitors()
+    
+    def get_active_monitor_id():
+        hypr = Hyprland()
+        active_window = hypr.get_active_window()
+        return active_window.monitor.id if active_window else None
 
     bars = []
     monitors = get_all_monitors()
