@@ -15,14 +15,18 @@ import config.data as data
 from modules.metrics import MetricsSmall, Battery, NetworkApplet
 from modules.controls import ControlSmall
 from modules.weather import Weather
+from hyprpy import Hyprland
 
 class Bar(Window):
-    def __init__(self, **kwargs):
+    def __init__(self, monitor_id=None, **kwargs):
         super().__init__(
             name="bar",
             layer="top",
+            monitor=monitor_id,
             anchor="left top right" if not data.VERTICAL else "top left bottom",
-            margin="-4px -4px -8px -4px" if not data.VERTICAL else "-4px -8px -4px -4px",
+            margin="-4px -4px -8px -4px"
+            if not data.VERTICAL
+            else "-4px -8px -4px -4px",
             exclusivity="auto",
             visible=True,
             all_visible=True,
@@ -54,7 +58,7 @@ class Bar(Window):
                 markup=icons.toolbox
             )
         )
-
+        
         self.connection = get_hyprland_connection()
         self.button_tools.connect("enter_notify_event", self.on_button_enter)
         self.button_tools.connect("leave_notify_event", self.on_button_leave)
@@ -317,9 +321,14 @@ class Bar(Window):
 
     def overview(self):
         self.notch.open_notch("overview")
+    
+    def get_all_monitors():
+        hypr = Hyprland()
+        return hypr.get_monitors()
 
     def power_menu(self):
         self.notch.open_notch("power")
+    
     def tools_menu(self):
         self.notch.open_notch("tools")
 

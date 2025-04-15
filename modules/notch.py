@@ -28,18 +28,20 @@ from utils.occlusion import check_occlusion
 
 
 class Notch(Window):
-    def __init__(self, **kwargs):
+    def __init__(self, monitor_id=None, **kwargs):
         super().__init__(
-            name="notch",
+            name=f"notch-{monitor_id}",
             layer="top",
             anchor="top",
             margin="-40px 0px 0px 0px" if not data.VERTICAL else "0px 0px 0px 0px",
-            
+            monitor=monitor_id,
             keyboard_mode="none",
             exclusivity="none",
             visible=True,
             all_visible=True,
         )
+
+        self.monitor_id = monitor_id
 
         # Add character buffer for launcher transition
         self._typed_chars_buffer = ""
