@@ -8,6 +8,7 @@ from modules.bar import Bar
 from modules.corners import Corners
 from modules.dock import Dock
 from modules.notch import Notch
+from hyprpy import Hyprland
 
 fonts_updated_file = f"{CACHE_DIR}/fonts_updated"
 
@@ -19,25 +20,56 @@ if __name__ == "__main__":
 
     current_wallpaper = os.path.expanduser("~/.current.wall")
     if not os.path.exists(current_wallpaper):
-        example_wallpaper = os.path.expanduser(f"~/.config/{APP_NAME_CAP}/assets/wallpapers_example/example-1.jpg")
+        example_wallpaper = os.path.expanduser(
+            f"~/.config/{APP_NAME_CAP}/assets/wallpapers_example/example-1.jpg"
+        )
         os.symlink(example_wallpaper, current_wallpaper)
-    
+
     # Load configuration
     from config.data import load_config
     config = load_config()
-    
     corners = Corners()
-    bar = Bar()
-    notch = Notch()
-    dock = Dock() 
-    bar.notch = notch
-    notch.bar = bar
+    dock = Dock()
+
+    notch = None
     
+    def get_all_monitors():
+        hypr = Hyprland()
+        return hypr.get_monitors()
+    
+    def get_active_monitor_id():
+        hypr = Hyprland()
+        active_window = hypr.get_active_window()
+        return active_window.monitor.id if active_window else None
+
+    bars = []
+    monitors = get_all_monitors()
+    notches = []
+
+    for i, monitor in enumerate(monitors):
+        bar = Bar(monitor_id=monitor.id)
+        notch = Notch(monitor_id=monitor.id)  # Her monitör için ayrı notch
+        bar.notch = notch
+        notch.bar = bar
+        bars.append(bar)
+        notches.append(notch)
+
     # Set corners visibility based on config
-    corners_visible = config.get('corners_visible', True)
+    corners_visible = config.get("corners_visible", True)
     corners.set_visible(corners_visible)
+
+    app_components = [dock, corners] + bars + notches
+    for bar in bars:
+        app_components.append(bar)
+
+    # Add the notch only once and only if it was created
+    if notch:
+        app_components.append(notch)
+
+    app = Application(
+        f"{APP_NAME}", *app_components
+    )
     
-    app = Application(f"{APP_NAME}", bar, notch, dock, corners)  # Make sure corners is added to the app
 
     def set_css():
         from config.data import CURRENT_WIDTH, CURRENT_HEIGHT
